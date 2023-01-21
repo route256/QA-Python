@@ -1,0 +1,15 @@
+.with_services:
+  services:
+    - name: gitlab.ozon.dev/qa/classroom-3/students/dependency_proxy/containers/postgres:13
+      alias: postgres
+    - name: gitlab.ozon.dev/qa/classroom-3/students/dependency_proxy/containers/swaggerapi/swagger-ui:v4.10.3
+      alias: swaggerapi
+    - name: gitlab.ozon.dev/qa/classroom-3/students/dependency_proxy/containers/nginx:1.20
+      alias: nginx
+    - name: gitlab-registry.ozon.dev/qa/classroom-3/act-device-api
+      alias: device-api
+  variables:
+    FF_NETWORK_PER_BUILD: 1
+    POSTGRES_USER: docker
+    POSTGRES_PASSWORD: docker
+    POSTGRES_DB: act_device_api

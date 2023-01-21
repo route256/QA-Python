@@ -1,0 +1,45 @@
+include:
+  local: .services.yml
+
+variables:
+  DOCKER_AUTH_CONFIG: '{"auths":{"gitlab.ozon.dev":{"username":"$CI_DEPENDENCY_PROXY_USER","password":"$CI_DEPENDENCY_PROXY_PASSWORD"}}}'
+
+stages:
+  - build
+  - lint
+  - test
+
+build:
+  stage: build
+  image: gitlab.ozon.dev/qa/classroom-2/students/dependency_proxy/containers/docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+  except:
+    - pipelines
+
+
+flake8:
+  stage: lint
+  image: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  script:
+    - flake8
+  only:
+    - merge_requests
+
+e2e:
+  stage: test
+  extends: .with_services
+  image: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  allow_failure: true
+  script:
+    - python -m pytest --alluredir=allure-results
+  artifacts:
+    when: always
+    paths:
+      - allure-results/
