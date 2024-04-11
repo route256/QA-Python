@@ -1,0 +1,82 @@
+include:
+     - local: '/.gitlab-ci.d/docker.yml'
+
+
+stages:
+    - pre-check
+    - prepare
+    - test
+    - post-test
+
+variables:
+    ROUTE_SECOND_ENV: route256
+
+
+lint:
+    stage: pre-check
+    image: python:3.10
+    allow_failure: true
+    before_script:
+        - pip install flake8
+    script:
+        - flake8
+    after_script:
+        - echo "Hello"
+
+
+create docker:
+    variables: 
+        IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    extends: .docker
+    rules:
+        - if: $CI_COMMIT_REF_SLUG =~ "master"
+          when: manual
+
+create commit docker:
+    variables: 
+        IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    extends: .docker
+    rules:
+        - if: $CI_COMMIT_REF_SLUG =~ "master"
+          when: manual
+
+test:
+    stage: test
+    image: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    rules: 
+        - !reference [.rules, rules]
+    script:
+        - pytest
+
+
+    # variables:
+    #     ROUTE_SECOND_ENV: route259
+    #     EXTEND_ENV: extend
+    # when: always
+    # script:
+    #     - echo $CI_COMMIT_BRANCH
+    #     - echo $ROUTE_TEST_ENV
+    #     - echo $ROUTE_SECOND_ENV
+    #     - echo $ROUTE_ENV
+    #     - echo EXTEND_ENV=$EXTEND_ENV >> build.env
+    #     - mkdir route256
+    #     - cd route256
+    #     - echo EXTEND_ENV=$EXTEND_ENV >> build.txt
+    # artifacts:
+    #     paths:
+    #         - route256/
+
+
+test_2:
+    stage: post-test
+    variables:
+        ROUTE_ENV: 259route
+    script:
+        - ls -a
+        - echo $EXTEND_ENV
+        - echo $CI_COMMIT_BRANCH
+        - echo $ROUTE_TEST_ENV
+        - echo $ROUTE_SECOND_ENV
+        - echo $ROUTE_ENV
+    # needs:
+    #     - test

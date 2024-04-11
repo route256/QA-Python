@@ -1,0 +1,52 @@
+project:
+  name: Ozon Code Platform Template API
+  debug: true
+  environment: development
+
+grpc:
+  host: 0.0.0.0
+  port: 8082
+  maxConnectionIdle: 5 # Minutes
+  timeout: 15 # Seconds
+  maxConnectionAge: 5 # Minutes
+
+rest:
+  host: 0.0.0.0
+  port: 8080
+  user: ozon
+  password: route256
+
+metrics:
+  host: 0.0.0.0
+  port: 9100
+  path: /metrics
+
+jaeger:
+  service: "act-device-api"
+  host: localhost
+  port: ":6831"
+
+status:
+  host: 0.0.0.0
+  port: 8000
+  livenessPath: /live
+  readinessPath: /ready
+  versionPath: /version
+
+database:
+  host: localhost
+  port: 5432
+  user: docker
+  password: docker
+  name: act_device_api
+  sslmode: disable
+  migrations: migrations
+  driver: pgx
+
+kafka:
+  capacity: 512
+  topic: "act-device-events"
+  groupId: "act-device-api"
+  brokers:
+    - "localhost:9094"
+  enabled: false

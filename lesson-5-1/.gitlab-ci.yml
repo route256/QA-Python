@@ -1,0 +1,90 @@
+stages:
+    - install
+    - build
+    - pre_deploy
+    - deploy
+    - tests
+    - notify
+
+install deps:
+    stage: install
+    only:
+        - merge_requests
+        - master
+    script:
+        - echo "install deps job"
+
+builds libs:
+    stage: build
+    only:
+        - merge_requests
+        - master
+    script:
+        - echo "builds libs job"
+
+build 3rd party:
+    stage: build
+    only:
+        - merge_requests
+        - master
+    script:
+        - echo "build 3rd party job"
+
+unit:
+    stage: pre_deploy
+    only:
+        - merge_requests
+    script:
+        - echo "unit job"
+
+lint:
+    stage: pre_deploy
+    only:
+        - merge_requests
+    script:
+        - echo "lint job"
+
+integration:
+    stage: tests
+    only:
+        - merge_requests
+    script:
+        - echo "integration job"
+
+staging:
+    stage: deploy
+    only:
+        - merge_requests
+    script:
+        - echo "staging job"
+
+staging switch:
+    stage: deploy
+    only:
+        - merge_requests
+    script:
+        - echo "staging switch job"
+
+
+create tag:
+    stage: deploy
+    only:
+        - master
+    script:
+        - echo "create tag switch job"
+
+deploy to prod:
+    stage: deploy
+    only:
+        - tags
+    script:
+        - echo "deploy to prod job"
+
+
+notify to telegram:
+    stage: notify
+    only:
+        - tags
+    script:
+        - echo "notify to telegram job"
+
