@@ -1,0 +1,108 @@
+version: "3.9"
+
+services:
+  nginx:
+    container_name: nginx
+    platform: linux/x86_64
+    image: nginx:1.20
+    restart: unless-stopped
+    logging:
+      driver: 'gelf'
+      options:
+        gelf-address: 'udp://localhost:12201'
+        tag: nginx
+    networks:
+      - ompnw
+    ports:
+      - 8080:8080
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - act-device-api
+      - swagger-ui
+
+  postgres:
+    container_name: postgres
+    platform: linux/x86_64
+    image: postgres:13
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres" ]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: act_device_api
+      APP_DB_USER: docker
+      APP_DB_PASS: docker
+    networks:
+      - ompnw
+    volumes:
+      - ./scripts/init-database.sh:/docker-entrypoint-initdb.d/init-database.sh
+
+  jaeger:
+    container_name: jaeger
+    platform: linux/x86_64
+    image: jaegertracing/all-in-one:1.32
+    restart: unless-stopped
+    ports:
+      - 6831:6831/udp
+      - 16686:16686
+    networks:
+      - ompnw
+
+  act-device-api:
+    container_name: act-device-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - ompnw
+    depends_on:
+      - postgres
+    links:
+      - postgres
+    ports:
+      - 8083:8080 # REST
+      - 8082:8082 # gRPC
+      - 9100:9100 # Metrics prometheus
+      - 8000:8000 # Status prometheus
+      - 40000:40000 # Debug port
+    healthcheck:
+      test: [ 'CMD', 'curl', '-v', 'http://localhost:8000/live' ]
+      interval: 10s
+      timeout: 10s
+      retries: 2
+      start_period: 20s
+    volumes:
+      - ./migrations:/root/migrations
+      - ./container-config.yml:/root/config.yml
+
+  swagger-ui:
+    container_name: swagger-ui
+    platform: linux/x86_64
+    image: swaggerapi/swagger-ui:v4.10.3
+    ports:
+      - 8081:8080
+    restart: always
+    volumes:
+      - ./swagger:/swagger
+    environment:
+      SWAGGER_JSON: /swagger/ozonmp/act_device_api/v1/act_device_api.swagger.json
+    depends_on:
+      - act-device-api
+    networks:
+      - ompnw
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  ompnw:
+    driver: bridge

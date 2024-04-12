@@ -1,0 +1,55 @@
+stages:
+    - pre-check
+    - prepare
+    - test
+    - deploy
+
+push_environment:
+    stage: pre-check
+    script:
+        - docker --version
+        -  echo "QA_ENV=stg" >> build.env
+    artifacts:
+        reports:
+            dotenv: build.env
+
+lint:
+  stage: pre-check
+  image: python:3.10
+  script:
+    - pip install flake8
+    - flake8
+
+create docker:
+    stage: prepare
+    variables:
+        IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    script:
+        - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+        - docker build . -t $IMAGE_TAG
+        - docker push $IMAGE_TAG
+
+
+test:
+    stage: test
+    image: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    script:
+        - pytest
+    after_script:
+      - ls -a
+    artifacts:
+        when: always
+        paths:
+        - allure_result/
+
+pages:
+  stage: deploy
+  when: always
+  dependencies:
+    - test
+  script:
+    - mv allure_result/ public/
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
